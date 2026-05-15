@@ -1,277 +1,45 @@
-const STORAGE_KEYS = {
-  assets: "portfolio_assets",
-  monthlyTotals: "portfolio_monthly_totals",
-  apiSettings: "portfolio_api_settings"
-};
-
-const state = {
-  assets: load(STORAGE_KEYS.assets, []),
-  monthlyTotals: load(STORAGE_KEYS.monthlyTotals, []),
-  apiSettings: load(STORAGE_KEYS.apiSettings, { alphaVantageApiKey: "" })
-};
-
-const $ = (id) => document.getElementById(id);
-const yen = (n) => `¥${Number(n || 0).toLocaleString("ja-JP", { maximumFractionDigits: 2 })}`;
-
-let allocationChart;
-let totalTrendChart;
-
-function load(key, fallback) {
-  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+const KEY="nogekiri_v1";
+const defaults={currentAge:20,targetAge:35,currentAssets:1000000,monthlyLivingCost:300000,annualReturn:7,jobRoute:"カスタム",income20early:1000000,income20late:5000000,income30early:9000000,income30late:12000000,income40plus:15000000,taxMode:"auto",manualTakeHomeRate:74,investMode:"auto",manualInvestment:150000,expenseMode:"manual",rent:80000,fixedCost:50000,hobbyCost:70000,annualSpecial:300000,sideIncome:0,sideGrowth:30,sideCap:300000,sideTakeHomeRate:80,dailyTakeHome:30000,acceptableDays:3};
+const routes={"会社員":{manualTakeHomeRate:75,dailyTakeHome:18000},"医師":{manualTakeHomeRate:63,dailyTakeHome:45000},"エンジニア":{manualTakeHomeRate:72,dailyTakeHome:25000},"資格職":{manualTakeHomeRate:70,dailyTakeHome:28000},"公務員":{manualTakeHomeRate:76,dailyTakeHome:19000},"起業・副業":{manualTakeHomeRate:68,dailyTakeHome:22000},"学生":{manualTakeHomeRate:90,dailyTakeHome:8000},"カスタム":{}};
+const ids=Object.keys(defaults); const state={...defaults,...JSON.parse(localStorage.getItem(KEY)||"{}")};
+const charts={};
+const el=id=>document.getElementById(id); const y=v=>`¥${Math.round(v).toLocaleString("ja-JP")}`;
+function incomeByAge(a,s){if(a<25)return s.income20early;if(a<30)return s.income20late;if(a<35)return s.income30early;if(a<40)return s.income30late;return s.income40plus;}
+function takeRate(income,s){if(s.taxMode==="manual")return s.manualTakeHomeRate/100; if(income<3000000)return .82;if(income<5000000)return .78;if(income<8000000)return .74;if(income<12000000)return .69;if(income<18000000)return .63;return .58;}
+function calc(customReturn){const s=collect(); const arr=[]; let assets=s.currentAssets, side=s.sideIncome; let e5,e3,e1,fire;
+ for(let age=s.currentAge;age<=Math.max(s.targetAge,60);age++){
+  const annual=incomeByAge(age,s), tr=takeRate(annual,s), take=annual*tr, monthTake=take/12;
+  const monthlyCost=s.expenseMode==="auto"?(s.rent+s.fixedCost+s.hobbyCost+s.annualSpecial/12):s.monthlyLivingCost;
+  const invest=s.investMode==="manual"?s.manualInvestment:Math.max(monthTake-monthlyCost,0);
+  side=Math.min(side*(1+s.sideGrowth/100),s.sideCap); const sideNet=side*(s.sideTakeHomeRate/100);
+  const assetIncome=assets*.04/12, escape=((assetIncome+sideNet)/monthlyCost)*100;
+  const shortage=Math.max(monthlyCost-assetIncome-sideNet,0), needWeek=(shortage/s.dailyTakeHome)/4;
+  if(e5===undefined&&needWeek<=5)e5=age; if(e3===undefined&&needWeek<=3)e3=age; if(e1===undefined&&needWeek<=1)e1=age; if(fire===undefined&&shortage<=0)fire=age;
+  arr.push({age,annual,take,monthlyCost,invest,assets,assetIncome,sideNet,escape,needWeek,taxLoss:annual-take});
+  assets=assets*(1+(customReturn??s.annualReturn)/100)+invest*12;
+  if(age===30)assets*=.7; if(age===33)assets*=.5;
+ }
+ return {arr,e5,e3,e1,fire,s};
 }
-
-function save() {
-  localStorage.setItem(STORAGE_KEYS.assets, JSON.stringify(state.assets));
-  localStorage.setItem(STORAGE_KEYS.monthlyTotals, JSON.stringify(state.monthlyTotals));
-  localStorage.setItem(STORAGE_KEYS.apiSettings, JSON.stringify(state.apiSettings));
+function score(row,s){const escape=Math.min(row.escape,180)/1.8; const work=Math.max(0,100-row.needWeek*20); const assets=Math.min(row.assets/50000000*100,100); const side=Math.min(row.sideNet/200000*100,100); const invest=Math.min(row.invest/200000*100,100); const crash=Math.min((row.assets/(row.monthlyCost*12))*5,100); return Math.round((escape+work+assets+side+invest+crash)/6);}
+function rank(sc){if(sc>=85)return"S";if(sc>=75)return"A";if(sc>=60)return"B";if(sc>=45)return"C";if(sc>=30)return"D";return"E"}
+function comment(sc){if(sc>=75)return"年収が高いだけでは不十分。あなたは手取りと投資余力への変換ができています。";if(sc>=55)return"完全FIREは遠くても、週5で消耗する未来からは逃げ始めています。";return"週5が当たり前、という前提を疑うところから再設計を。資産はエンジン、副業は加速装置です。";}
+function render(){const res=calc(); const target=res.arr.find(x=>x.age===res.s.targetAge)??res.arr.at(-1); const sc=score(target,res.s), r=rank(sc);
+ el("score").textContent=`${sc}点 (${r})`; el("escape5").textContent=res.e5??"未到達"; el("fireAge").textContent=res.fire??"未到達";
+ const sideZero={...res.s,sideIncome:0}; const noSide=calcWith(sideZero); const fast=(noSide.e5??999)-(res.e5??999);
+ el("resultText").innerHTML=`<h2>診断結果</h2><ul><li>目標年齢の必要労働日数: ${target.needWeek.toFixed(2)}日/週</li><li>週3脱出年齢: ${res.e3??"未到達"} / 週1脱出年齢: ${res.e1??"未到達"}</li><li>副業月${Math.round(res.s.sideIncome/10000)}万円は、週5脱出を${fast>0?fast.toFixed(1):0}年早めます。</li><li>この年収だと、ざっくり年間${y(target.taxLoss)}が税金・社会保険で消えます。</li><li>年収${y(target.annual)}でも、自由に使える手取りは約${y(target.take)}です。</li><li>${comment(sc)}</li><li>ランク${r}: ${["E:このままだと普通に週5労働","D:まだ労働依存が強い","C:副業か投資額の強化が必要","B:週3勤務ならかなり自由","A:週1〜2勤務で十分","S:もう労働に人生を握られていない"][["E","D","C","B","A","S"].indexOf(r)]}</li></ul>`;
+ draw(res);
 }
-
-function calcAssetMetrics(asset) {
-  const type = asset.type;
-  if (type === "投資信託") {
-    const units = Number(asset.units || 0);
-    const currentNav = Number(asset.currentNav || 0);
-    const avgNav = Number(asset.avgNav || 0);
-    const value = units * currentNav / 10000;
-    const cost = units * avgNav / 10000;
-    const profit = value - cost;
-    const profitRate = cost > 0 ? (profit / cost) * 100 : 0;
-    return { value, cost, profit, profitRate };
-  }
-  if (["ETF", "個別株", "暗号資産"].includes(type)) {
-    const quantity = Number(asset.quantity || 0);
-    const currentPrice = Number(asset.currentPrice || 0);
-    const avgPrice = Number(asset.avgPrice || 0);
-    const value = quantity * currentPrice;
-    const cost = quantity * avgPrice;
-    const profit = value - cost;
-    const profitRate = cost > 0 ? (profit / cost) * 100 : 0;
-    return { value, cost, profit, profitRate };
-  }
-  const value = Number(asset.cashAmount || 0);
-  return { value, cost: value, profit: 0, profitRate: 0 };
-}
-
-function normalizeAssets() {
-  state.assets = state.assets.map((a) => ({ ...a, ...calcAssetMetrics(a) }));
-}
-
-function render() {
-  normalizeAssets();
-  renderTotal();
-  renderAssetList();
-  renderMonthlyTotalsList();
-  renderCharts();
-  save();
-}
-
-function renderTotal() {
-  const total = state.assets.reduce((sum, a) => sum + Number(a.value || 0), 0);
-  $("total-assets").textContent = yen(total);
-}
-
-function renderAssetList() {
-  const list = $("asset-list");
-  if (!state.assets.length) return (list.innerHTML = "<p>まだ銘柄が登録されていません。</p>");
-  list.innerHTML = state.assets.map((asset) => `
-    <article class="asset-item">
-      <div class="asset-head"><strong>${escapeHtml(asset.name)}</strong><span>${yen(asset.value)}</span></div>
-      <div class="asset-meta">${asset.type}${asset.ticker ? ` / ${escapeHtml(asset.ticker)}` : ""} / 毎月積立: ${yen(asset.monthly)}</div>
-      <div class="asset-meta">取得額: ${yen(asset.cost)} / 損益: ${yen(asset.profit)} (${Number(asset.profitRate).toFixed(2)}%)</div>
-      <div class="asset-meta">メモ: ${escapeHtml(asset.memo || "-")}</div>
-      <div class="asset-actions">
-        <button class="btn secondary" onclick="startEdit('${asset.id}')">編集</button>
-        <button class="btn danger" onclick="deleteAsset('${asset.id}')">削除</button>
-      </div>
-    </article>
-  `).join("");
-}
-
-function renderMonthlyTotalsList() {
-  const list = $("monthly-total-list");
-  const sorted = [...state.monthlyTotals].sort((a, b) => a.month.localeCompare(b.month));
-  list.innerHTML = sorted.length ? sorted.map((i) => `${i.month}: ${yen(i.amount)}`).join("<br>") : "月次総資産データはまだありません。";
-}
-
-function renderCharts() {
-  const byType = state.assets.reduce((acc, a) => {
-    acc[a.type] = (acc[a.type] || 0) + Number(a.value || 0);
-    return acc;
-  }, {});
-
-  allocationChart?.destroy();
-  allocationChart = new Chart($("allocation-chart"), {
-    type: "pie",
-    data: { labels: Object.keys(byType), datasets: [{ data: Object.values(byType), backgroundColor: ["#1f6feb", "#2ea043", "#f59f00", "#a371f7", "#6e7781"] }] },
-    options: { responsive: true, maintainAspectRatio: false }
-  });
-
-  const sorted = [...state.monthlyTotals].sort((a, b) => a.month.localeCompare(b.month));
-  totalTrendChart?.destroy();
-  totalTrendChart = new Chart($("total-trend-chart"), {
-    type: "line",
-    data: { labels: sorted.map((x) => x.month), datasets: [{ label: "総資産額", data: sorted.map((x) => x.amount), borderColor: "#1f6feb", backgroundColor: "rgba(31,111,235,0.2)", tension: 0.25, fill: true }] },
-    options: { responsive: true, maintainAspectRatio: false }
-  });
-}
-
-function updateFormFieldsByType() {
-  const type = $("type").value;
-  const show = (id, visible) => $(id).classList.toggle("hidden", !visible);
-  show("ticker-wrap", ["ETF", "個別株", "暗号資産"].includes(type));
-  show("units-wrap", type === "投資信託");
-  show("avg-nav-wrap", type === "投資信託");
-  show("current-nav-wrap", type === "投資信託");
-  show("quantity-wrap", ["ETF", "個別株", "暗号資産"].includes(type));
-  show("avg-price-wrap", ["ETF", "個別株", "暗号資産"].includes(type));
-  show("current-price-wrap", ["ETF", "個別株", "暗号資産"].includes(type));
-  show("cash-amount-wrap", type === "現金");
-}
-
-async function fetchCoinGeckoPrice(id) {
-  const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=jpy`);
-  if (!res.ok) throw new Error("CoinGecko APIエラー");
-  const data = await res.json();
-  return Number(data?.[id]?.jpy);
-}
-
-async function fetchAlphaVantagePrice(symbol, apiKey) {
-  const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(apiKey)}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Alpha Vantage APIエラー");
-  const data = await res.json();
-  const price = Number(data?.["Global Quote"]?.["05. price"]);
-  if (!price) throw new Error("Alpha Vantage価格取得失敗");
-  return price;
-}
-
-async function refreshPrices() {
-  const status = $("price-update-status");
-  status.textContent = "価格を更新中...";
-  const logs = [];
-
-  for (const asset of state.assets) {
-    try {
-      if (asset.type === "暗号資産") {
-        const t = (asset.ticker || "").toUpperCase();
-        if (t === "BTC") asset.currentPrice = await fetchCoinGeckoPrice("bitcoin");
-        else if (t === "ETH") asset.currentPrice = await fetchCoinGeckoPrice("ethereum");
-        else logs.push(`${asset.name}: 未対応の暗号資産ティッカーのため手入力価格を維持`);
-      }
-      if (["ETF", "個別株"].includes(asset.type)) {
-        if (!state.apiSettings.alphaVantageApiKey) {
-          logs.push(`${asset.name}: Alpha Vantage APIキー未設定のため手入力価格を維持`);
-          continue;
-        }
-        if (!asset.ticker) {
-          logs.push(`${asset.name}: ティッカー未設定のため手入力価格を維持`);
-          continue;
-        }
-        asset.currentPrice = await fetchAlphaVantagePrice(asset.ticker, state.apiSettings.alphaVantageApiKey);
-      }
-    } catch {
-      logs.push(`${asset.name}: 自動取得失敗のため手入力価格を維持`);
-    }
-  }
-
-  render();
-  status.textContent = logs.length ? `更新完了（一部手入力価格を使用）: ${logs.join(" / ")}` : "更新完了: すべての取得対象価格を更新しました。";
-}
-
-function startEdit(id) {
-  const asset = state.assets.find((a) => a.id === id);
-  if (!asset) return;
-  $("asset-id").value = asset.id;
-  $("name").value = asset.name;
-  $("type").value = asset.type;
-  $("ticker").value = asset.ticker || "";
-  $("units").value = asset.units || "";
-  $("quantity").value = asset.quantity || "";
-  $("avg-nav").value = asset.avgNav || "";
-  $("current-nav").value = asset.currentNav || "";
-  $("avg-price").value = asset.avgPrice || "";
-  $("current-price").value = asset.currentPrice || "";
-  $("cash-amount").value = asset.cashAmount || "";
-  $("monthly").value = asset.monthly;
-  $("memo").value = asset.memo || "";
-  $("cancel-edit").classList.remove("hidden");
-  updateFormFieldsByType();
-}
-
-function resetForm() {
-  $("asset-form").reset();
-  $("asset-id").value = "";
-  $("cancel-edit").classList.add("hidden");
-  updateFormFieldsByType();
-}
-
-function deleteAsset(id) {
-  state.assets = state.assets.filter((a) => a.id !== id);
-  render();
-}
-
-function escapeHtml(str) {
-  return String(str).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
-}
-
-$("type").addEventListener("change", updateFormFieldsByType);
-
-$("asset-form").addEventListener("submit", (e) => {
-  e.preventDefault();
-  const id = $("asset-id").value;
-  const type = $("type").value;
-  const payload = {
-    id: id || crypto.randomUUID(),
-    name: $("name").value.trim(),
-    type,
-    ticker: $("ticker").value.trim().toUpperCase(),
-    units: Number($("units").value || 0),
-    quantity: Number($("quantity").value || 0),
-    avgNav: Number($("avg-nav").value || 0),
-    currentNav: Number($("current-nav").value || 0),
-    avgPrice: Number($("avg-price").value || 0),
-    currentPrice: Number($("current-price").value || 0),
-    cashAmount: Number($("cash-amount").value || 0),
-    monthly: Number($("monthly").value || 0),
-    memo: $("memo").value.trim()
-  };
-
-  if (type === "現金") payload.ticker = "";
-
-  payload.value = calcAssetMetrics(payload).value;
-
-  if (id) state.assets = state.assets.map((a) => (a.id === id ? payload : a));
-  else state.assets.push(payload);
-
-  resetForm();
-  render();
-});
-
-$("cancel-edit").addEventListener("click", resetForm);
-
-$("monthly-total-form").addEventListener("submit", (e) => {
-  e.preventDefault();
-  const month = $("total-month").value;
-  const amount = Number($("total-amount").value);
-  const existing = state.monthlyTotals.find((x) => x.month === month);
-  if (existing) existing.amount = amount;
-  else state.monthlyTotals.push({ month, amount });
-  save();
-  e.target.reset();
-  render();
-});
-
-$("save-api-key").addEventListener("click", () => {
-  state.apiSettings.alphaVantageApiKey = $("alpha-vantage-api-key").value.trim();
-  save();
-  $("price-update-status").textContent = "APIキーを保存しました。";
-});
-
-$("refresh-prices").addEventListener("click", refreshPrices);
-
-window.startEdit = startEdit;
-window.deleteAsset = deleteAsset;
-
-$("alpha-vantage-api-key").value = state.apiSettings.alphaVantageApiKey || "";
-updateFormFieldsByType();
-render();
+function calcWith(s){const old=collect;return (function(){const bak=collect;collect=()=>s;const r=calc();collect=bak;return r;})();}
+function draw(res){const L=res.arr.map(v=>v.age),D=res.arr; mk("assetChart","line",L,[{label:"予想資産額",data:D.map(v=>v.assets),borderColor:"#0f766e"}]);
+ mk("incomeChart","line",L,[{label:"年収",data:D.map(v=>v.annual),borderColor:"#2563eb"},{label:"手取り",data:D.map(v=>v.take),borderColor:"#16a34a"}]);
+ mk("investChart","bar",L,[{label:"毎月投資可能額",data:D.map(v=>v.invest),backgroundColor:"#0ea5e9"}]);
+ mk("escapeChart","line",L,[{label:"労働脱出率(%)",data:D.map(v=>v.escape),borderColor:"#22c55e"}]);
+ const t=D.find(v=>v.age===res.s.targetAge)??D.at(-1), labor=Math.max(t.monthlyCost-t.assetIncome-t.sideNet,0); mk("ratioChart","doughnut",["資産収入","副業手取り","労働収入"],[{data:[t.assetIncome,t.sideNet,labor],backgroundColor:["#14b8a6","#3b82f6","#64748b"]}]);
+ const s3=calc(res.s.annualReturn?3:3),s5=calc(5),s7=calc(7),s10=calc(10); mk("scenarioChart","line",L,[{label:"3%",data:s3.arr.map(v=>v.assets),borderColor:"#94a3b8"},{label:"5%",data:s5.arr.map(v=>v.assets),borderColor:"#22c55e"},{label:"7%",data:s7.arr.map(v=>v.assets),borderColor:"#0ea5e9"},{label:"10%",data:s10.arr.map(v=>v.assets),borderColor:"#7c3aed"}]);}
+function mk(id,type,labels,datasets){charts[id]?.destroy(); charts[id]=new Chart(el(id),{type,data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false}})}
+function collect(){ids.forEach(i=>{const n=el(i).type==="number"?Number(el(i).value):el(i).value; state[i]=n;}); localStorage.setItem(KEY,JSON.stringify(state)); return state;}
+function init(){const sel=el("jobRoute"); Object.keys(routes).forEach(k=>sel.add(new Option(k,k))); ids.forEach(i=>el(i).value=state[i]);
+ el("jobRoute").addEventListener("change",()=>{const r=routes[el("jobRoute").value]||{}; Object.entries(r).forEach(([k,v])=>el(k).value=v);});
+ document.querySelectorAll("input,select").forEach(n=>n.addEventListener("change",()=>{collect();render();})); el("calcBtn").addEventListener("click",render); render();}
+init();
