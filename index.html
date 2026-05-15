@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>投資ポートフォリオ管理アプリ</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <h1>投資ポートフォリオ管理アプリ</h1>
+    <p>まずはローカル保存で気軽に資産管理を始めよう</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>保有銘柄を追加・編集</h2>
+      <form id="asset-form" class="grid-form">
+        <input type="hidden" id="asset-id" />
+
+        <label>
+          銘柄名
+          <input id="name" type="text" required placeholder="例: eMAXIS Slim 全世界株式" />
+        </label>
+
+        <label>
+          種類
+          <select id="type" required>
+            <option value="投資信託">投資信託</option>
+            <option value="ETF">ETF</option>
+            <option value="個別株">個別株</option>
+            <option value="暗号資産">暗号資産</option>
+            <option value="現金">現金</option>
+          </select>
+        </label>
+
+        <label>
+          現在の評価額（円）
+          <input id="value" type="number" min="0" step="1" required placeholder="例: 500000" />
+        </label>
+
+        <label>
+          毎月の積立額（円）
+          <input id="monthly" type="number" min="0" step="1" required placeholder="例: 30000" />
+        </label>
+
+        <label class="full-width">
+          メモ
+          <textarea id="memo" rows="3" placeholder="投資方針や目標など"></textarea>
+        </label>
+
+        <div class="actions full-width">
+          <button type="submit" class="btn primary">保存</button>
+          <button type="button" id="cancel-edit" class="btn secondary hidden">編集をキャンセル</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card summary-card">
+      <h2>総資産額</h2>
+      <p id="total-assets" class="total-value">¥0</p>
+    </section>
+
+    <section class="card">
+      <h2>登録銘柄一覧</h2>
+      <div id="asset-list" class="asset-list"></div>
+    </section>
+
+    <section class="card">
+      <h2>資産配分（種類別）</h2>
+      <div class="chart-wrap"><canvas id="allocation-chart"></canvas></div>
+    </section>
+
+    <section class="card">
+      <h2>毎月の総資産推移</h2>
+      <form id="monthly-total-form" class="inline-form">
+        <label>
+          月（YYYY-MM）
+          <input id="total-month" type="month" required />
+        </label>
+        <label>
+          総資産額（円）
+          <input id="total-amount" type="number" min="0" step="1" required />
+        </label>
+        <button type="submit" class="btn primary">追加</button>
+      </form>
+      <div id="monthly-total-list" class="simple-list"></div>
+      <div class="chart-wrap"><canvas id="total-trend-chart"></canvas></div>
+    </section>
+
+    <section class="card">
+      <h2>銘柄ごとの評価額推移</h2>
+      <form id="asset-history-form" class="inline-form">
+        <label>
+          銘柄
+          <select id="history-asset-id" required></select>
+        </label>
+        <label>
+          月（YYYY-MM）
+          <input id="history-month" type="month" required />
+        </label>
+        <label>
+          評価額（円）
+          <input id="history-value" type="number" min="0" step="1" required />
+        </label>
+        <button type="submit" class="btn primary">追加</button>
+      </form>
+      <div id="asset-history-list" class="simple-list"></div>
+      <div class="chart-wrap"><canvas id="asset-trend-chart"></canvas></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
