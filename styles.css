@@ -118,3 +118,13 @@ input, select, textarea {
   .inline-form { grid-template-columns: 1fr; }
   .chart-wrap { height: 240px; }
 }
+
+.api-form {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.status-text {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
