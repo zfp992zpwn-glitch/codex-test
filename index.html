@@ -10,10 +10,23 @@
 <body>
   <header class="app-header">
     <h1>投資ポートフォリオ管理アプリ</h1>
-    <p>まずはローカル保存で気軽に資産管理を始めよう</p>
+    <p>価格更新と手入力を組み合わせて、資産をまとめて管理</p>
   </header>
 
   <main class="container">
+    <section class="card">
+      <h2>価格更新設定</h2>
+      <div class="inline-form api-form">
+        <label>
+          Alpha Vantage APIキー
+          <input id="alpha-vantage-api-key" type="password" placeholder="任意（米国株・ETFの自動取得用）" />
+        </label>
+        <button type="button" id="save-api-key" class="btn secondary">APIキー保存</button>
+        <button type="button" id="refresh-prices" class="btn primary">価格を更新</button>
+      </div>
+      <p id="price-update-status" class="status-text">価格更新はまだ実行されていません。</p>
+    </section>
+
     <section class="card">
       <h2>保有銘柄を追加・編集</h2>
       <form id="asset-form" class="grid-form">
@@ -35,9 +48,44 @@
           </select>
         </label>
 
-        <label>
-          現在の評価額（円）
-          <input id="value" type="number" min="0" step="1" required placeholder="例: 500000" />
+        <label id="ticker-wrap">
+          ティッカー
+          <input id="ticker" type="text" placeholder="例: VTI / AAPL / BTC / ETH" />
+        </label>
+
+        <label id="units-wrap">
+          保有口数
+          <input id="units" type="number" min="0" step="0.0001" placeholder="例: 120000" />
+        </label>
+
+        <label id="quantity-wrap" class="hidden">
+          保有数量
+          <input id="quantity" type="number" min="0" step="0.00000001" placeholder="例: 10" />
+        </label>
+
+        <label id="avg-nav-wrap">
+          平均取得基準価額
+          <input id="avg-nav" type="number" min="0" step="0.0001" placeholder="例: 18750" />
+        </label>
+
+        <label id="current-nav-wrap">
+          現在の基準価額
+          <input id="current-nav" type="number" min="0" step="0.0001" placeholder="例: 21340" />
+        </label>
+
+        <label id="avg-price-wrap" class="hidden">
+          平均取得単価
+          <input id="avg-price" type="number" min="0" step="0.0001" placeholder="例: 280.5" />
+        </label>
+
+        <label id="current-price-wrap" class="hidden">
+          現在価格
+          <input id="current-price" type="number" min="0" step="0.0001" placeholder="例: 312.2" />
+        </label>
+
+        <label id="cash-amount-wrap" class="hidden">
+          金額（現金）
+          <input id="cash-amount" type="number" min="0" step="1" placeholder="例: 300000" />
         </label>
 
         <label>
@@ -68,7 +116,7 @@
     </section>
 
     <section class="card">
-      <h2>資産配分（種類別）</h2>
+      <h2>資産配分（評価額ベース）</h2>
       <div class="chart-wrap"><canvas id="allocation-chart"></canvas></div>
     </section>
 
@@ -87,27 +135,6 @@
       </form>
       <div id="monthly-total-list" class="simple-list"></div>
       <div class="chart-wrap"><canvas id="total-trend-chart"></canvas></div>
-    </section>
-
-    <section class="card">
-      <h2>銘柄ごとの評価額推移</h2>
-      <form id="asset-history-form" class="inline-form">
-        <label>
-          銘柄
-          <select id="history-asset-id" required></select>
-        </label>
-        <label>
-          月（YYYY-MM）
-          <input id="history-month" type="month" required />
-        </label>
-        <label>
-          評価額（円）
-          <input id="history-value" type="number" min="0" step="1" required />
-        </label>
-        <button type="submit" class="btn primary">追加</button>
-      </form>
-      <div id="asset-history-list" class="simple-list"></div>
-      <div class="chart-wrap"><canvas id="asset-trend-chart"></canvas></div>
     </section>
   </main>
 
