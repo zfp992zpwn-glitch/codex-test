@@ -1,143 +1,16 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>投資ポートフォリオ管理アプリ</title>
-  <link rel="stylesheet" href="styles.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
+<html lang="ja"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>人生逃げ切り診断</title><link rel="stylesheet" href="styles.css"/><script src="https://cdn.jsdelivr.net/npm/chart.js"></script></head>
 <body>
-  <header class="app-header">
-    <h1>投資ポートフォリオ管理アプリ</h1>
-    <p>価格更新と手入力を組み合わせて、資産をまとめて管理</p>
-  </header>
-
-  <main class="container">
-    <section class="card">
-      <h2>価格更新設定</h2>
-      <div class="inline-form api-form">
-        <label>
-          Alpha Vantage APIキー
-          <input id="alpha-vantage-api-key" type="password" placeholder="任意（米国株・ETFの自動取得用）" />
-        </label>
-        <button type="button" id="save-api-key" class="btn secondary">APIキー保存</button>
-        <button type="button" id="refresh-prices" class="btn primary">価格を更新</button>
-      </div>
-      <p id="price-update-status" class="status-text">価格更新はまだ実行されていません。</p>
-    </section>
-
-    <section class="card">
-      <h2>保有銘柄を追加・編集</h2>
-      <form id="asset-form" class="grid-form">
-        <input type="hidden" id="asset-id" />
-
-        <label>
-          銘柄名
-          <input id="name" type="text" required placeholder="例: eMAXIS Slim 全世界株式" />
-        </label>
-
-        <label>
-          種類
-          <select id="type" required>
-            <option value="投資信託">投資信託</option>
-            <option value="ETF">ETF</option>
-            <option value="個別株">個別株</option>
-            <option value="暗号資産">暗号資産</option>
-            <option value="現金">現金</option>
-          </select>
-        </label>
-
-        <label id="ticker-wrap">
-          ティッカー
-          <input id="ticker" type="text" placeholder="例: VTI / AAPL / BTC / ETH" />
-        </label>
-
-        <label id="units-wrap">
-          保有口数
-          <input id="units" type="number" min="0" step="0.0001" placeholder="例: 120000" />
-        </label>
-
-        <label id="quantity-wrap" class="hidden">
-          保有数量
-          <input id="quantity" type="number" min="0" step="0.00000001" placeholder="例: 10" />
-        </label>
-
-        <label id="avg-nav-wrap">
-          平均取得基準価額
-          <input id="avg-nav" type="number" min="0" step="0.0001" placeholder="例: 18750" />
-        </label>
-
-        <label id="current-nav-wrap">
-          現在の基準価額
-          <input id="current-nav" type="number" min="0" step="0.0001" placeholder="例: 21340" />
-        </label>
-
-        <label id="avg-price-wrap" class="hidden">
-          平均取得単価
-          <input id="avg-price" type="number" min="0" step="0.0001" placeholder="例: 280.5" />
-        </label>
-
-        <label id="current-price-wrap" class="hidden">
-          現在価格
-          <input id="current-price" type="number" min="0" step="0.0001" placeholder="例: 312.2" />
-        </label>
-
-        <label id="cash-amount-wrap" class="hidden">
-          金額（現金）
-          <input id="cash-amount" type="number" min="0" step="1" placeholder="例: 300000" />
-        </label>
-
-        <label>
-          毎月の積立額（円）
-          <input id="monthly" type="number" min="0" step="1" required placeholder="例: 30000" />
-        </label>
-
-        <label class="full-width">
-          メモ
-          <textarea id="memo" rows="3" placeholder="投資方針や目標など"></textarea>
-        </label>
-
-        <div class="actions full-width">
-          <button type="submit" class="btn primary">保存</button>
-          <button type="button" id="cancel-edit" class="btn secondary hidden">編集をキャンセル</button>
-        </div>
-      </form>
-    </section>
-
-    <section class="card summary-card">
-      <h2>総資産額</h2>
-      <p id="total-assets" class="total-value">¥0</p>
-    </section>
-
-    <section class="card">
-      <h2>登録銘柄一覧</h2>
-      <div id="asset-list" class="asset-list"></div>
-    </section>
-
-    <section class="card">
-      <h2>資産配分（評価額ベース）</h2>
-      <div class="chart-wrap"><canvas id="allocation-chart"></canvas></div>
-    </section>
-
-    <section class="card">
-      <h2>毎月の総資産推移</h2>
-      <form id="monthly-total-form" class="inline-form">
-        <label>
-          月（YYYY-MM）
-          <input id="total-month" type="month" required />
-        </label>
-        <label>
-          総資産額（円）
-          <input id="total-amount" type="number" min="0" step="1" required />
-        </label>
-        <button type="submit" class="btn primary">追加</button>
-      </form>
-      <div id="monthly-total-list" class="simple-list"></div>
-      <div class="chart-wrap"><canvas id="total-trend-chart"></canvas></div>
-    </section>
-  </main>
-
-  <script src="app.js"></script>
-</body>
-</html>
+<header class="hero"><h1>人生逃げ切り診断</h1><p>年収・税金・投資・副業から、週5労働を脱出できる年齢を逆算する</p></header>
+<main class="container">
+<section class="card"><h2>1. 基本情報</h2><div class="grid"><label>現在年齢<input id="currentAge" type="number" min="15" max="80"></label><label>目標年齢<input id="targetAge" type="number" min="15" max="90"></label><label>現在資産(円)<input id="currentAssets" type="number" min="0"></label><label>想定年利(%)<input id="annualReturn" type="number" min="0" step="0.1"></label></div></section>
+<section class="card"><h2>2. 職業ルート / 3. 年収ルート</h2><div class="grid"><label>職業ルート<select id="jobRoute"></select></label></div><p class="help">年収はバナーをタップして選択（あとで自由に編集可）</p><div id="incomeBanners" class="income-banners"></div></section>
+<section class="card"><h2>4. 税金・社会保険設定（簡易推定）</h2><div class="grid"><label>税モード<select id="taxMode"><option value="auto">自動推定</option><option value="manual">手動入力</option></select></label><label>手取り率(%)<input id="manualTakeHomeRate" type="number" min="30" max="100"></label></div><p class="note">※ 税金・社会保険は簡易推定であり、正確な税額計算ではありません。選択年収の推定手取り率は自動反映されます。</p></section>
+<section class="card"><h2>5. 支出設定（わかりやすい内訳）</h2><div class="grid"><label>生活費モード<select id="expenseMode"><option value="manual">月生活費を直接入力</option><option value="auto">内訳から自動計算</option></select></label><label>月生活費(円)<input id="monthlyLivingCost" type="number" min="0"></label><label>家賃(円)<input id="rent" type="number" min="0"></label><label>固定費(円)<input id="fixedCost" type="number" min="0"></label><label>趣味・交際費(円)<input id="hobbyCost" type="number" min="0"></label><label>年間特別支出(円)<input id="annualSpecial" type="number" min="0"></label></div><p id="expenseSummary" class="help"></p></section>
+<section class="card"><h2>6. 投資設定</h2><div class="grid"><label>投資モード<select id="investMode"><option value="auto">自動計算</option><option value="manual">手動入力</option></select></label><label>毎月投資額(円)<input id="manualInvestment" type="number" min="0"></label></div></section>
+<section class="card"><h2>7. 副業設定</h2><div class="grid"><label>現在の副業月収(円)<input id="sideIncome" type="number" min="0"></label><label>副業月収の年間成長率(%)<input id="sideGrowth" type="number" min="0"></label><label>副業月収の上限(円)<input id="sideCap" type="number" min="0"></label><label>副業手取り率(%)<input id="sideTakeHomeRate" type="number" min="0" max="100"></label></div></section>
+<section class="card"><h2>8. 労働単価設定</h2><div class="grid"><label>1日あたり手取り（自動）<input id="dailyTakeHome" type="number" min="1"></label><label>週何日までなら働いてもよいか<input id="acceptableDays" type="number" min="0" max="7" step="0.5"></label></div><p class="help" id="dailyHint"></p><button id="calcBtn" class="btn">診断する</button></section>
+<section class="card highlight"><div class="kpi"><h3>人生逃げ切りスコア</h3><p id="score">-</p></div><div class="kpi"><h3>週5脱出年齢</h3><p id="escape5">-</p></div><div class="kpi"><h3>完全FIRE年齢</h3><p id="fireAge">-</p></div></section>
+<section class="card" id="resultText"></section>
+<section class="card"><h2>グラフ</h2><div class="chart"><canvas id="assetChart"></canvas></div><div class="chart"><canvas id="incomeChart"></canvas></div><div class="chart"><canvas id="investChart"></canvas></div><div class="chart"><canvas id="escapeChart"></canvas></div><div class="chart"><canvas id="ratioChart"></canvas></div><div class="chart"><canvas id="scenarioChart"></canvas></div></section>
+</main><script src="app.js"></script></body></html>
