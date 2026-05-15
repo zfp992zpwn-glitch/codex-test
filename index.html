@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>投資ポートフォリオ管理アプリ</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <h1>投資ポートフォリオ管理アプリ</h1>
+    <p>価格更新とタイプ別計算で、資産状況を正確に把握</p>
+  </header>
+  <main class="container">
+    <section class="card">
+      <h2>価格更新設定</h2>
+      <div class="inline-form key-row">
+        <label><span>Alpha Vantage APIキー（米国株・ETF用）</span><input id="alpha-api-key" type="password" placeholder="画面で入力して保存" /></label>
+        <button type="button" id="alpha-key-save" class="btn secondary">APIキー保存</button>
+        <button type="button" id="update-prices" class="btn primary">価格を更新</button>
+      </div>
+      <pre id="price-update-status" class="status info">ここに価格更新結果が表示されます。</pre>
+    </section>
+
+    <section class="card"><h2>保有銘柄を追加・編集</h2><form id="asset-form" class="grid-form">
+      <input type="hidden" id="asset-id" />
+      <label>銘柄名<input id="name" type="text" list="name-candidates" required /><datalist id="name-candidates"></datalist></label>
+      <label>ティッカー（ETF・個別株・暗号資産向け）<input id="ticker" type="text" list="ticker-candidates" /><datalist id="ticker-candidates"></datalist></label>
+      <label>種類<select id="type" required><option value="投資信託">投資信託</option><option value="ETF">ETF</option><option value="個別株">個別株</option><option value="暗号資産">暗号資産</option><option value="現金">現金</option></select></label>
+      <label id="field-units">保有口数（投信）/保有数量（ETF・株・暗号資産）<input id="units" type="number" min="0" step="any" /></label>
+      <label id="field-avg-price">平均取得基準価額 / 平均取得単価<input id="avg-price" type="number" min="0" step="any" /></label>
+      <label id="field-current-price">現在の基準価額 / 現在価格<input id="current-price" type="number" min="0" step="any" /></label>
+      <label id="field-cash-amount" class="hidden">金額（現金）<input id="cash-amount" type="number" min="0" step="1" /></label>
+      <label>毎月の積立額（円）<input id="monthly" type="number" min="0" step="1" value="0" /></label>
+      <label class="full-width">メモ<textarea id="memo" rows="3"></textarea></label>
+      <div class="actions full-width"><button type="submit" class="btn primary">保存</button><button type="button" id="cancel-edit" class="btn secondary hidden">編集をキャンセル</button></div>
+    </form></section>
+
+    <section class="card summary-card"><h2>総資産額</h2><p id="total-assets" class="total-value">¥0</p></section>
+    <section class="card"><h2>登録銘柄一覧</h2><div id="asset-list" class="asset-list"></div></section>
+    <section class="card"><h2>資産配分（評価額ベース）</h2><div class="chart-wrap"><canvas id="allocation-chart"></canvas></div></section>
+    <section class="card"><h2>毎月の総資産推移</h2><form id="monthly-total-form" class="inline-form"><label><span>月（YYYY-MM）</span><input id="total-month" type="month" required /></label><label><span>総資産額（円）</span><input id="total-amount" type="number" min="0" step="1" required /></label><button type="submit" class="btn primary">追加</button></form><div id="monthly-total-list" class="simple-list"></div><div class="chart-wrap"><canvas id="total-trend-chart"></canvas></div></section>
+    <section class="card"><h2>銘柄ごとの評価額推移</h2><form id="asset-history-form" class="inline-form"><label><span>銘柄</span><select id="history-asset-id" required></select></label><label><span>月（YYYY-MM）</span><input id="history-month" type="month" required /></label><label><span>評価額（円）</span><input id="history-value" type="number" min="0" step="1" required /></label><button type="submit" class="btn primary">追加</button></form><div id="asset-history-list" class="simple-list"></div><div class="chart-wrap"><canvas id="asset-trend-chart"></canvas></div></section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
